@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>產科疾病分類編碼測驗 🌸</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:   #FAF6EF;
+  --milk:    #FFFDF9;
+  --warm:    #FEF9F3;
+  --parchment:#EDE5D8;
+  --border:  #E0D4C0;
+  --blush:   #F2D5C8;
+  --blush2:  #E8BBA8;
+  --rose:    #D4977A;
+  --peach:   #F5C9A8;
+  --sage:    #B8CCAA;
+  --sage2:   #7CAE6A;
+  --lav:     #D4C8E8;
+  --sky:     #C2D8E8;
+  --honey:   #E8C878;
+  --brown:   #5A3E28;
+  --text:    #4A3828;
+  --soft:    #9A8070;
+  --red:     #D46060;
+  --tea:     #C4A882;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+
+body {
+  font-family:'Noto Sans TC', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  overflow: hidden;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* ── 外框 ── */
+.viewer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  gap: 10px;
+}
+
+/* 進度條 */
+.top-bar {
+  width: 100%; max-width: 680px;
+  display: flex; align-items: center; gap: 10px;
+}
+.progress-track {
+  flex: 1; height: 6px; background: var(--border);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--rose), var(--peach));
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+.top-label {
+  font-family:'Caveat', cursive; font-size:.95rem; color:var(--soft);
+  white-space: nowrap;
+}
+
+/* ── 卡片 ── */
+.card-stage {
+  width: 100%; max-width: 680px;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.card {
+  position: absolute; inset: 0;
+  background: var(--milk);
+  border: 2px solid var(--border);
+  border-radius: 20px 24px 22px 18px;
+  box-shadow: 4px 6px 0 var(--parchment), 5px 8px 0 var(--border);
+  padding: 22px 24px 18px;
+  display: flex; flex-direction: column; gap: 14px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease, transform .3s ease;
+  transform: translateX(60px);
+  overflow-y: auto;
+}
+.card.active {
+  opacity: 1; pointer-events: all; transform: translateX(0);
+}
+.card.exit-left {
+  opacity: 0; transform: translateX(-60px);
+}
+
+/* 裝飾小膠帶 */
+.tape {
+  position: absolute; height: 14px;
+  background: rgba(242,213,200,.65);
+  border: 1px solid var(--blush2);
+  border-radius: 2px;
+}
+
+/* 難度標籤 */
+.diff-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 12px; border-radius: 20px;
+  font-family: 'Caveat', cursive; font-size: .85rem; font-weight: 600;
+  border: 1.5px solid currentColor;
+  align-self: flex-start;
+}
+
+/* 題號 */
+.q-num {
+  font-family:'Caveat', cursive; font-size:.85rem; color:var(--soft);
+  letter-spacing: .5px;
+}
+/* 定位標籤 */
+.q-location {
+  font-family:'JetBrains Mono', monospace; font-size:.7rem; color:var(--tea);
+  background: var(--parchment); padding: 2px 8px; border-radius: 4px;
+  display: inline-block; margin-top: -6px;
+}
+
+/* 題目文字 */
+.q-text {
+  font-size: .97rem; font-weight: 700; color: var(--brown);
+  line-height: 1.7;
+}
+
+/* 選項 */
+.options { display: flex; flex-direction: column; gap: 8px; }
+.opt {
+  padding: 10px 14px; border-radius: 12px 14px 12px 10px;
+  border: 1.5px solid var(--border); background: var(--cream);
+  font-size: .88rem; color: var(--text);
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: flex-start; gap: 10px;
+  text-align: left; width: 100%;
+}
+.opt:hover:not(.disabled) { background: var(--blush); border-color: var(--blush2); }
+.opt.correct  { background: #EEF7EA; border-color: var(--sage2); }
+.opt.wrong    { background: #FFF0F0; border-color: var(--red); }
+.opt.disabled { cursor: default; }
+.opt-letter {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: var(--milk); border: 1.5px solid var(--border);
+  font-family: 'Caveat', cursive; font-size: .9rem; font-weight: 700;
+  color: var(--soft); display: flex; align-items: center; justify-content: center;
+}
+.opt.correct .opt-letter { background: var(--sage2); color:#fff; border-color:var(--sage2); }
+.opt.wrong   .opt-letter { background: var(--red);   color:#fff; border-color:var(--red); }
+
+/* 解析框 */
+.feedback {
+  padding: 12px 14px; border-radius: 12px;
+  font-size: .85rem; line-height: 1.75; display: none;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.feedback.show { display: block; }
+.feedback.ok { background: #EEF7EA; color: #2D6A40; border: 1.5px solid #A8D8A8; }
+.feedback.no { background: #FFF0F0; color: #904040; border: 1.5px solid #F0B8B8; }
+
+/* ── 控制列 ── */
+.controls {
+  width: 100%; max-width: 680px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.ctrl-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: var(--milk);
+  color: var(--soft); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.ctrl-btn:hover:not(:disabled) { background: var(--blush); border-color: var(--blush2); color: var(--rose); }
+.ctrl-btn:disabled { opacity: .35; cursor: default; }
+
+.score-chip {
+  font-family:'Caveat', cursive; font-size:1rem; color:var(--brown);
+  background: var(--honey); padding: 5px 16px; border-radius: 20px;
+  border: 1.5px solid #D4A855;
+}
+
+.next-btn {
+  padding: 9px 22px; border-radius: 20px; border: none;
+  background: var(--rose); color: #fff;
+  font-family:'Caveat', cursive; font-size:1rem; font-weight:600;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 2px 3px 0 var(--blush2);
+  display: none;
+}
+.next-btn:hover { transform: translateY(-2px); }
+.next-btn.show  { display: block; }
+
+/* ── 封面 ── */
+.cover {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: 14px; padding: 20px;
+  min-height: 100%;
+}
+.cover-emoji { font-size: 3.5rem; }
+.cover-title {
+  font-family:'Noto Serif TC', serif;
+  font-size: 1.4rem; font-weight: 900; color: var(--brown);
+  line-height: 1.3;
+}
+.cover-sub { font-family:'Caveat', cursive; font-size:1rem; color:var(--soft); line-height:1.7; }
+.cover-stats {
+  display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+}
+.cover-stat {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 8px 16px; text-align: center;
+}
+.cover-stat-num { font-family:'Caveat', cursive; font-size:1.5rem; color:var(--rose); font-weight:700; }
+.cover-stat-label { font-size:.72rem; color:var(--soft); }
+.start-btn {
+  padding: 12px 32px; border-radius: 30px; border: none;
+  background: linear-gradient(135deg, var(--rose), var(--peach));
+  color: #fff; font-family:'Caveat', cursive; font-size:1.1rem; font-weight:700;
+  cursor: pointer; box-shadow: 3px 4px 0 var(--blush2); transition: all .2s;
+}
+.start-btn:hover { transform: translateY(-3px); box-shadow: 4px 6px 0 var(--blush2); }
+
+/* ── 結果頁 ── */
+.result {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: 14px; padding: 20px;
+  min-height: 100%;
+}
+.result-emoji  { font-size:3.5rem; }
+.result-score  { font-family:'Caveat', cursive; font-size:3rem; font-weight:700; color:var(--rose); }
+.result-pct    { font-family:'Caveat', cursive; font-size:1rem; color:var(--soft); }
+.result-msg    { font-family:'Caveat', cursive; font-size:1.05rem; color:var(--text); line-height:1.7; max-width:340px; }
+.result-breakdown {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%;
+}
+.rb-item {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 6px; text-align: center;
+}
+.rb-num   { font-family:'Caveat', cursive; font-size:1.4rem; font-weight:700; }
+.rb-label { font-size:.7rem; color:var(--soft); }
+.retry-btn {
+  padding: 10px 28px; border-radius: 20px; border: none;
+  background: var(--rose); color: #fff;
+  font-family:'Caveat', cursive; font-size:1rem; font-weight:600;
+  cursor: pointer; box-shadow: 2px 3px 0 var(--blush2); transition: all .2s;
+}
+.retry-btn:hover { transform: translateY(-2px); }
+
+/* 浮動裝飾 */
+.deco { position:absolute; pointer-events:none; font-size:1.1rem; opacity:.2; }
+</style>
+</head>
+<body>
+<div class="viewer">
+
+  <!-- 進度條 -->
+  <div class="top-bar" id="topBar" style="display:none">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="top-label" id="topLabel">1 / 20</div>
+  </div>
+
+  <!-- 卡片舞台 -->
+  <div class="card-stage" id="cardStage">
+
+    <!-- 封面 -->
+    <div class="card active" id="cardCover">
+      <span class="deco" style="top:12px;right:18px">🌸</span>
+      <span class="deco" style="bottom:16px;left:14px">✿</span>
+      <span class="deco" style="top:50%;right:10px">⭐</span>
+      <div class="cover">
+        <div class="cover-emoji">🤱</div>
+        <div class="cover-title">產科疾病分類編碼<br>測驗題庫</div>
+        <div class="cover-sub">
+          ICD-10-CM/PCS 第 15 章 · O碼專項<br>
+          Chapter 15 · Obstetrics Coding Quiz 🌸
+        </div>
+        <div class="cover-stats">
+          <div class="cover-stat">
+            <div class="cover-stat-num">20</div>
+            <div class="cover-stat-label">題目總數</div>
+          </div>
+          <div class="cover-stat">
+            <div class="cover-stat-num">3</div>
+            <div class="cover-stat-label">難度等級</div>
+          </div>
+          <div class="cover-stat">
+            <div class="cover-stat-num">FY2026</div>
+            <div class="cover-stat-label">最新指引</div>
+          </div>
+        </div>
+        <button class="start-btn" onclick="startQuiz()">✎ 開始測驗</button>
+      </div>
+    </div>
+
+    <!-- 題目卡片：JS 動態插入 -->
+
+    <!-- 結果卡片 -->
+    <div class="card" id="cardResult">
+      <span class="deco" style="top:14px;right:18px">🎊</span>
+      <span class="deco" style="bottom:14px;left:14px">✨</span>
+      <div class="result" id="resultContent"></div>
+    </div>
+
+  </div>
+
+  <!-- 控制列 -->
+  <div class="controls" id="controls" style="display:none">
+    <button class="ctrl-btn" id="btnPrev" onclick="prevQ()" disabled>‹</button>
+    <div class="score-chip" id="scoreChip">得分 0 ⭐</div>
+    <button class="next-btn" id="btnNext" onclick="nextQ()">下一題 →</button>
+    <button class="ctrl-btn" id="btnNext2" onclick="nextQ()" style="display:none">›</button>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// 題庫資料
+// ══════════════════════════════════════════════
+const questions = [
+  // ── 容易題 1–10 ──
+  {
+    diff:'easy', loc:'O碼優先',
+    q:'根據產科編碼的「絕對優先權」，除非醫師明確註明與懷孕無關，否則病患在產後多久時間內仍應優先使用第 15 章的 O 碼？',
+    opts:['產後 2 週內','產後 4 週內','產後 6 週內','產後 8 週內'],
+    ans:2,
+    fb:'✅ 正確！只要病患懷孕、生產或在產後 6 週內，強制優先使用 O 碼（第 15 章絕對優先權）。'
+  },
+  {
+    diff:'easy', loc:'O碼優先',
+    q:'關於 O 碼的使用禁區，下列敘述何者正確？',
+    opts:['O 碼可用於新生兒病歷','O 碼是媽媽專屬，絕對不可用於新生兒病歷','新生兒出現產程併發症應編 O 碼','母體與新生兒病歷皆應編列 O 碼以利統計'],
+    ans:1,
+    fb:'✅ 正確！O 碼是媽媽專屬，絕對不可用於新生兒病歷。新生兒有專屬的 Z38 代碼。'
+  },
+  {
+    diff:'easy', loc:'永遠的神隊友',
+    q:'在產科編碼中，Z3A（妊娠週數）應依據什麼時間點的完成週數來編碼？',
+    opts:['入院當天','出院當天','胎兒產出當天','醫師診斷當天'],
+    ans:0,
+    fb:'✅ 正確！Z3A（妊娠週數）應依據「入院當天」完成的週數進行編碼。'
+  },
+  {
+    diff:'easy', loc:'永遠的神隊友',
+    q:'下列哪一個代碼是用於說明產婦的「生產結局」（如胎數與存活狀態），且只要有生產紀錄就必須編列？',
+    opts:['Z3A','Z34','Z37','Z38'],
+    ans:2,
+    fb:'✅ 正確！Z37 代表生產結局，只要有生產紀錄，母體病歷必編，說明胎數與存活狀態。'
+  },
+  {
+    diff:'easy', loc:'PCS 切換視角',
+    q:'關於 ICD-10-PCS 的產科節（Section 1），其手術施作對象（受精產物，POC）不包含下列何者？',
+    opts:['胎兒','胎盤','羊水','母體產道裂傷'],
+    ans:3,
+    fb:'✅ 正確！PCS Section 1 是對「受精產物 (POC)」施作（胎兒、胎盤、羊水、臍帶）；產道裂傷修補是對「母體自身」施作，屬 Section 0。'
+  },
+  {
+    diff:'easy', loc:'關鍵 20 週！',
+    q:'若一位孕婦於懷孕 18 週時發生破水並產下具有心跳的寶寶（活產），依據規則應如何編列？',
+    opts:['編列流產碼 (O02.1)','編列過期流產碼','編列生產碼與活產結局 (Z33.2+Z37)','僅編列 Z3A 週數碼'],
+    ans:2,
+    fb:'✅ 正確！終極例外規則：只要寶寶出生有心跳或呼吸（活產），不論週數多小，一律編生產碼與活產結局 (Z33.2+Z37)。'
+  },
+  {
+    diff:'easy', loc:'甜蜜的陷阱：妊娠糖尿病',
+    q:'針對「妊娠糖尿病 (GDM)」患者，若同時使用飲食與胰島素控制，編碼的優先序為何？',
+    opts:['只編飲食控制','只編胰島素控制','兩者皆編，飲食優先','兩者皆編，胰島素優先'],
+    ans:1,
+    fb:'✅ 正確！若妊娠糖尿病患者同時使用飲食與胰島素控制，絕對優先序為「只編胰島素控制」(O24.4*4)。'
+  },
+  {
+    diff:'easy', loc:'2025/2026 Coding Clinic 前沿快報',
+    q:'根據 2026 年最新 Coding Clinic 指引，若產婦無併發症但「自願要求剖腹產」，應使用下列哪一個代碼？',
+    opts:['O80','O82','O09','Z34'],
+    ans:1,
+    fb:'✅ 正確！2026 年最新確認，若無現有併發症之自願性（無醫療指引）剖腹產，適用 O82 碼。'
+  },
+  {
+    diff:'easy', loc:'產房抗疫戰',
+    q:'產褥期敗血症在編碼時有其特殊性，下列敘述何者正確？',
+    opts:['使用 A40/A41 作為主診斷','使用 O85 作為主診斷','絕對不可加編細菌碼','與一般敗血症編碼邏輯完全相同'],
+    ans:1,
+    fb:'✅ 正確！產褥期敗血症有其專屬碼 O85（豪華單間），以此為主診斷，只需加編細菌碼，不使用 A40/A41。'
+  },
+  {
+    diff:'easy', loc:'2025/2026 Coding Clinic 前沿快報',
+    q:'關於胎兒生長遲滯，FGR 與 IUGR 在編碼上的關係為何？',
+    opts:['兩者定義不同，代碼互斥','FGR 是主診斷，IUGR 是次診斷','兩者視為同義詞，皆使用 O36.59-','只有 IUGR 需要編碼'],
+    ans:2,
+    fb:'✅ 正確！根據最新規範，FGR（胎兒生長遲滯）與 IUGR 在編碼上視為同義詞，皆使用 O36.59-。'
+  },
+  // ── 中等題 11–15 ──
+  {
+    diff:'medium', loc:'2025/2026 Coding Clinic 前沿快報',
+    q:'若產婦在產程中自然發生破水 (SROM)，且並非早期或延遲破水，根據 2025 Q3 的規範應如何處理？',
+    opts:['必須編列破水代碼','視為併發症編列','除非有感染否則不需給碼','不需編碼'],
+    ans:3,
+    fb:'✅ 正確！2025 Q3 重大規範：除非是早期或延遲破水，否則產程中正常發生的自然破水 (SROM) 不需給碼。'
+  },
+  {
+    diff:'medium', loc:'手術方式：生產 vs. 抽取',
+    q:'產科 PCS 手術方式中，「Extraction（抽取）」與「Delivery（生產）」的主要區別在於：',
+    opts:['手術地點不同','是否有使用器械或外力拉出','施作對象是媽媽還是寶寶','只有剖腹產屬於 Delivery'],
+    ans:1,
+    fb:'✅ 正確！Delivery (10E0XZZ) 僅輔助自然產且無器械；Extraction（抽取）包含靠外力或器械拉出，如剖腹產、真空吸引、產鉗等。'
+  },
+  {
+    diff:'medium', loc:'產婦高血壓 (HTN) 的魔法算式',
+    q:'若一位產婦既有原發性高血壓，且本次懷孕合併了心臟病，正確的編碼邏輯為何？',
+    opts:['僅編 I10','[既有高血壓 O10.-] + [心腎病 I11~I13]','[既有高血壓 O10.-] + [I10]','僅編 O13 妊娠高血壓'],
+    ans:1,
+    fb:'✅ 正確！魔法算式：[既有高血壓 O10.-] + [心腎病 I11~I13]，特別提醒不加 I10。'
+  },
+  {
+    diff:'medium', loc:'產房抗疫戰',
+    q:'關於 GBS 鏈球菌在產科的編碼，下列何者屬於「單純帶菌者」的代碼？',
+    opts:['O98.82','B95.1','O99.824','O85'],
+    ans:2,
+    fb:'✅ 正確！GBS 鏈球菌單純帶菌者編列 O99.824；若為活動性感染則編 O98.82 + B95.1。'
+  },
+  {
+    diff:'medium', loc:'誰才是老大?',
+    q:'若病患入院原因是為了處理多項生產併發症，在選擇主要診斷 (Pdx) 時應遵循什麼原則？',
+    opts:['隨機選擇一項','選擇英文字母順序最前者','選擇與「生產」最相關的併發症','選擇對胎兒影響最小者'],
+    ans:2,
+    fb:'✅ 正確！在挑選主要診斷 (Pdx) 時，若入院原因有多項併發症，應選擇與「生產」最相關者。'
+  },
+  // ── 困難題 16–20 ──
+  {
+    diff:'hard', loc:'關鍵 20 週！',
+    q:'一位產婦懷孕 22 週因故發生死產 (IUFD)，關於其編碼邏輯，下列敘述何者錯誤？',
+    opts:['視同生產處理，編列 O36.4-','需加編 Z3A 週數碼','需加編 Z37 生產結局碼','因為未滿 24 週，應改編流產碼'],
+    ans:3,
+    fb:'✅ 正確答案是 (D) 說法錯誤！週數 ≥ 20 週的死產 (IUFD) 視同生產 (O36.4-)，需加編 Z3A 與 Z37，不應改編流產碼。'
+  },
+  {
+    diff:'hard', loc:'PCS 切換視角',
+    q:'在產科 ICD-10-PCS 的邏輯中，下列哪一項手術應編列於「Section 0 (內外科節)」而非「Section 1 (產科節)」？',
+    opts:['剖腹產 (C-Section)','真空吸引助產','輸卵管結紮','人工剝離胎盤'],
+    ans:2,
+    fb:'✅ 正確！Section 0 是對「懷孕母體自身」施作，如輸卵管結紮；A、B、D 選項皆是對「受精產物 (POC)」施作，屬 Section 1。'
+  },
+  {
+    diff:'hard', loc:'產婦高血壓 (HTN) 的魔法算式',
+    q:'關於妊娠高血壓的「魔法算式」，下列組合何者正確？',
+    opts:['妊娠誘發高血壓 + 蛋白尿 = O14 (子癇前症)','妊娠誘發高血壓 + 抽搐 = O13','子癇前症 + 蛋白尿 = O15','既有高血壓應外加 I10 碼以說明嚴重度'],
+    ans:0,
+    fb:'✅ 正確！妊娠誘發高血壓無蛋白尿 = O13；有蛋白尿 = O14 (子癇前症)；子癇前症 + 抽搐 = O15 (子癇症)。'
+  },
+  {
+    diff:'hard', loc:'甜蜜的陷阱：妊娠糖尿病',
+    q:'下列關於妊娠糖尿病 (GDM) 的「地雷警告」，何者絕對禁止使用？',
+    opts:['O24.4- 系列代碼','外加 E 碼','外加 Z79.4（長期使用胰島素）','標註飲食控制'],
+    ans:2,
+    fb:'✅ 正確！GDM（妊娠糖尿病）地雷警告：絕對不可外加 Z79.4（長期使用胰島素）。'
+  },
+  {
+    diff:'hard', loc:'產房抗疫戰',
+    q:'針對產婦確診 COVID-19 的編碼順序，下列何者符合「O 碼優先」原則？',
+    opts:['U07.1 為主診斷，O98.5- 為次診斷','O98.5- 為主診斷，U07.1 為次診斷','僅編 U07.1，不編 O 碼','僅編 O 碼，不可編 U07.1'],
+    ans:1,
+    fb:'✅ 正確！嚴格遵守 O 碼優先原則：O98.5- 為主診斷，U07.1 為次診斷。'
+  },
+];
+
+const diffConfig = {
+  easy:   { label:'容易題 ✿',  color:'#7CAE6A', bg:'#EEF7EA' },
+  medium: { label:'中等題 ★',  color:'#C4986A', bg:'#FDF4EC' },
+  hard:   { label:'困難題 ⚡', color:'#C06060', bg:'#FFF0F0' },
+};
+const letters = ['A','B','C','D'];
+
+let current   = 0;
+let score     = 0;
+let answered  = false;
+let started   = false;
+let order     = [];  // 隨機順序索引陣列
+const userAns = new Array(questions.length).fill(-1);
+
+// Fisher-Yates 洗牌
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function initOrder() {
+  order = shuffle([...Array(questions.length).keys()]);
+}
+
+// ── 建立卡片（依原始索引建立，顯示時用 order 映射）──
+function buildCards() {
+  const stage = document.getElementById('cardStage');
+  questions.forEach((q, i) => {
+    const dc = diffConfig[q.diff];
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.id = `card-${i}`;
+    div.innerHTML = `
+      <div class="tape" style="top:-4px;left:42px;width:50px;transform:rotate(-1.5deg)"></div>
+      <span class="diff-badge" style="color:${dc.color};border-color:${dc.color};background:${dc.bg}">${dc.label}</span>
+      <div class="q-num" id="qnum-${i}">✎ 第 ? 題 · 共 ${questions.length} 題</div>
+      <div class="q-location">${q.loc}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options" id="opts-${i}">
+        ${q.opts.map((o,j) => `
+          <button class="opt" id="opt-${i}-${j}" onclick="pickAnswer(${i},${j})">
+            <span class="opt-letter">${letters[j]}</span>
+            <span>${o}</span>
+          </button>`).join('')}
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+    `;
+    stage.insertBefore(div, document.getElementById('cardResult'));
+  });
+}
+
+function startQuiz() {
+  started = true;
+  userAns.fill(-1);
+  score = 0;
+  initOrder();  // 每次開始前重新隨機排序
+  document.getElementById('topBar').style.display   = 'flex';
+  document.getElementById('controls').style.display = 'flex';
+  showCard(-1, 0);
+}
+
+function showCard(fromPos, toPos) {
+  // fromPos / toPos 都是「出題位置」(0-based)，實際題目索引從 order 取得
+
+  const fromId = fromPos === -1 ? 'cardCover'
+               : fromPos === questions.length ? 'cardResult'
+               : `card-${order[fromPos]}`;
+  const fromEl = document.getElementById(fromId);
+  if (fromEl) {
+    fromEl.classList.remove('active');
+    fromEl.classList.add('exit-left');
+    setTimeout(() => fromEl.classList.remove('exit-left'), 350);
+  }
+
+  current  = toPos;
+  const qi = order[toPos];  // 實際題目索引
+  answered = userAns[qi] !== -1;
+
+  if (toPos === questions.length) {
+    showResult();
+    document.getElementById('cardResult').classList.add('active');
+    document.getElementById('topBar').style.display   = 'none';
+    document.getElementById('controls').style.display = 'none';
+    return;
+  }
+
+  const toEl = document.getElementById(`card-${qi}`);
+  // 更新題號顯示（出題位置 + 1）
+  document.getElementById(`qnum-${qi}`).textContent = `✎ 第 ${toPos + 1} 題 · 共 ${questions.length} 題`;
+  toEl.classList.add('active');
+
+  if (answered) restoreAnswered(qi);
+  else resetCard(qi);
+
+  updateUI();
+}
+
+function resetCard(i) {
+  document.querySelectorAll(`#opts-${i} .opt`).forEach(o => {
+    o.classList.remove('correct','wrong','disabled');
+  });
+  const fb = document.getElementById(`fb-${i}`);
+  fb.className = 'feedback'; fb.textContent = '';
+  document.getElementById('btnNext').classList.remove('show');
+}
+
+function restoreAnswered(i) {
+  const q = questions[i];
+  const ua = userAns[i];
+  document.querySelectorAll(`#opts-${i} .opt`).forEach(o => o.classList.add('disabled'));
+  document.getElementById(`opt-${i}-${ua}`).classList.add(ua === q.ans ? 'correct' : 'wrong');
+  if (ua !== q.ans) document.getElementById(`opt-${i}-${q.ans}`).classList.add('correct');
+  const fb = document.getElementById(`fb-${i}`);
+  fb.textContent = ua === q.ans ? q.fb : `❌ 答錯了。${q.fb}`;
+  fb.className   = `feedback show ${ua === q.ans ? 'ok' : 'no'}`;
+  document.getElementById('btnNext').classList.add('show');
+}
+
+function pickAnswer(qIdx, optIdx) {
+  if (userAns[qIdx] !== -1) return;  // 已答
+  const q  = questions[qIdx];
+  userAns[qIdx] = optIdx;
+  answered = true;
+  if (optIdx === q.ans) score++;
+
+  document.querySelectorAll(`#opts-${qIdx} .opt`).forEach(o => o.classList.add('disabled'));
+  document.getElementById(`opt-${qIdx}-${optIdx}`).classList.add(optIdx === q.ans ? 'correct' : 'wrong');
+  if (optIdx !== q.ans) document.getElementById(`opt-${qIdx}-${q.ans}`).classList.add('correct');
+
+  const fb = document.getElementById(`fb-${qIdx}`);
+  fb.textContent = optIdx === q.ans ? q.fb : `❌ 答錯了。${q.fb}`;
+  fb.className   = `feedback show ${optIdx === q.ans ? 'ok' : 'no'}`;
+  document.getElementById('btnNext').classList.add('show');
+
+  updateUI();
+}
+
+function nextQ() {
+  showCard(current, current + 1);
+}
+
+function prevQ() {
+  if (current > 0) showCard(current, current - 1);
+}
+
+function updateUI() {
+  const total = questions.length;
+  const pct   = ((current + 1) / total) * 100;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('topLabel').textContent = `${current + 1} / ${total}`;
+  document.getElementById('scoreChip').textContent = `得分 ${score} ⭐`;
+  document.getElementById('btnPrev').disabled = current === 0;
+
+  const qi      = order[current];
+  const btnNext = document.getElementById('btnNext');
+  if (userAns[qi] !== -1) {
+    btnNext.textContent = current === total - 1 ? '查看結果 🌸' : '下一題 →';
+    btnNext.classList.add('show');
+  } else {
+    btnNext.classList.remove('show');
+  }
+}
+
+function showResult() {
+  const total = questions.length;
+  const pct   = Math.round(score / total * 100);
+  const emoji = pct >= 85 ? '🏆' : pct >= 60 ? '🌸' : '📚';
+  const msg   = pct >= 85 ? '太厲害了！你是產科編碼達人 ✨'
+              : pct >= 60 ? '不錯喔！再複習一下錯題吧 🌿'
+              : '繼續加油！建議重看課程後再試一次 ☁️';
+
+  // 用原始 questions 索引統計各難度得分
+  const easy   = questions.filter((q,i) => q.diff==='easy'   && userAns[i]===q.ans).length;
+  const medium = questions.filter((q,i) => q.diff==='medium' && userAns[i]===q.ans).length;
+  const hard   = questions.filter((q,i) => q.diff==='hard'   && userAns[i]===q.ans).length;
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="result-emoji">${emoji}</div>
+    <div class="result-score">${score} / ${total}</div>
+    <div class="result-pct">正確率 ${pct}%</div>
+    <div class="result-msg">${msg}</div>
+    <div class="result-breakdown">
+      <div class="rb-item">
+        <div class="rb-num" style="color:#7CAE6A">${easy}/10</div>
+        <div class="rb-label">容易題 ✿</div>
+      </div>
+      <div class="rb-item">
+        <div class="rb-num" style="color:#C4986A">${medium}/5</div>
+        <div class="rb-label">中等題 ★</div>
+      </div>
+      <div class="rb-item">
+        <div class="rb-num" style="color:#C06060">${hard}/5</div>
+        <div class="rb-label">困難題 ⚡</div>
+      </div>
+    </div>
+    <button class="retry-btn" onclick="retryQuiz()">🔄 重新挑戰（換題序）</button>
+  `;
+}
+
+function retryQuiz() {
+  score    = 0;
+  answered = false;
+  userAns.fill(-1);
+  // 重置所有卡片狀態
+  questions.forEach((_,i) => resetCard(i));
+  // 重新隨機排序
+  initOrder();
+  document.getElementById('cardResult').classList.remove('active');
+  document.getElementById('topBar').style.display   = 'flex';
+  document.getElementById('controls').style.display = 'flex';
+  showCard(questions.length, 0);
+}
+
+// 初始化（只建卡片，不洗牌，洗牌在 startQuiz 時才做）
+buildCards();
+</script>
+</body>
+</html>
