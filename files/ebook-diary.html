@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的小小日記本 ✿</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap');
+
+:root {
+  --cream:   #fdf6ec;
+  --milk:    #fef9f2;
+  --latte:   #e8d5b7;
+  --caramel: #c9a882;
+  --blush:   #f7d9d0;
+  --peach:   #f5c4a8;
+  --rose:    #e8a090;
+  --lavender:#e8dff0;
+  --sage:    #d4e8d8;
+  --sky:     #d6eaf5;
+  --ink:     #5a4035;
+  --ink2:    #7a5c50;
+  --ink3:    #a08070;
+  --white:   #fffdf8;
+  --shadow:  rgba(180,130,90,0.15);
+  --dur: 600ms;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  min-height:100vh;
+  background: linear-gradient(135deg, #fdf0e0 0%, #fce8e0 50%, #f8e8f0 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:'Noto Sans TC',sans-serif;
+  padding:16px;
+  position:relative;
+  overflow:hidden;
+}
+
+/* Background decorative dots */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    radial-gradient(circle, rgba(200,160,120,0.12) 1px, transparent 1px);
+  background-size:28px 28px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* Floating bg deco */
+.bg-deco {
+  position:fixed;
+  pointer-events:none;
+  z-index:0;
+  font-size:28px;
+  opacity:0.12;
+  animation: floatDeco 8s ease-in-out infinite;
+}
+.bg-deco:nth-child(1){top:8%;left:5%;animation-delay:0s;}
+.bg-deco:nth-child(2){top:15%;right:8%;animation-delay:2s;}
+.bg-deco:nth-child(3){bottom:12%;left:10%;animation-delay:4s;}
+.bg-deco:nth-child(4){bottom:8%;right:6%;animation-delay:1s;}
+.bg-deco:nth-child(5){top:45%;left:2%;animation-delay:3s;}
+.bg-deco:nth-child(6){top:40%;right:3%;animation-delay:5s;}
+@keyframes floatDeco {
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  50%{transform:translateY(-12px) rotate(8deg);}
+}
+
+/* ── Viewer wrapper ── */
+.viewer {
+  position:relative;
+  z-index:1;
+  width:100%;
+  max-width:700px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+
+/* ── Book title header ── */
+.book-header {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.book-header-title {
+  font-size:15px;
+  color:var(--caramel);
+  letter-spacing:0.08em;
+  font-weight:500;
+}
+.header-deco {
+  font-size:16px;
+  animation: spin 4s linear infinite;
+}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+/* ── Page stage ── */
+.page-stage {
+  width:100%;
+  max-width:700px;
+  height:480px;
+  position:relative;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:
+    0 8px 32px rgba(180,130,90,0.22),
+    0 2px 8px rgba(180,130,90,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* ── Each page ── */
+.page {
+  position:absolute;
+  inset:0;
+  background:var(--milk);
+  border-radius:24px;
+  padding:36px 44px 32px;
+  display:flex;
+  flex-direction:column;
+  opacity:0;
+  transform:translateX(100%);
+  transition: transform var(--dur) cubic-bezier(0.4,0,0.2,1),
+              opacity var(--dur) cubic-bezier(0.4,0,0.2,1);
+  will-change:transform,opacity;
+  overflow:hidden;
+}
+
+/* Paper grain overlay */
+.page::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+  border-radius:24px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* Active = visible center */
+.page.active {
+  opacity:1;
+  transform:translateX(0);
+  z-index:2;
+}
+/* Entering from right */
+.page.enter-right {
+  transform:translateX(100%);
+  opacity:0;
+  z-index:3;
+}
+.page.enter-right.entering {
+  transform:translateX(0);
+  opacity:1;
+}
+/* Entering from left */
+.page.enter-left {
+  transform:translateX(-100%);
+  opacity:0;
+  z-index:3;
+}
+.page.enter-left.entering {
+  transform:translateX(0);
+  opacity:1;
+}
+/* Exiting to left */
+.page.exit-left {
+  transform:translateX(0);
+  opacity:1;
+  z-index:2;
+}
+.page.exit-left.exiting {
+  transform:translateX(-100%);
+  opacity:0;
+}
+/* Exiting to right */
+.page.exit-right {
+  transform:translateX(0);
+  opacity:1;
+  z-index:2;
+}
+.page.exit-right.exiting {
+  transform:translateX(100%);
+  opacity:0;
+}
+
+/* page content above grain */
+.page > * { position:relative; z-index:1; }
+
+/* ── Page variants by colour ── */
+.page-cream  { background: #fdf6ec; }
+.page-blush  { background: #fef3f0; }
+.page-sky    { background: #f0f7fd; }
+.page-sage   { background: #f2f9f4; }
+.page-lav    { background: #f5f0fb; }
+.page-peach  { background: #fef2ea; }
+
+/* ── Decorative tape strips ── */
+.tape {
+  position:absolute;
+  width:64px; height:18px;
+  border-radius:3px;
+  opacity:0.55;
+  transform:rotate(-6deg);
+  z-index:5;
+}
+.tape-pink   { background: repeating-linear-gradient(45deg, #f7d9d0, #f7d9d0 3px, #fce8e4 3px, #fce8e4 6px); }
+.tape-yellow { background: repeating-linear-gradient(45deg, #fde8b0, #fde8b0 3px, #fef3d0 3px, #fef3d0 6px); }
+.tape-blue   { background: repeating-linear-gradient(45deg, #c8e0f5, #c8e0f5 3px, #dceef8 3px, #dceef8 6px); }
+.tape-mint   { background: repeating-linear-gradient(45deg, #b8e0c8, #b8e0c8 3px, #d0eed8 3px, #d0eed8 6px); }
+
+/* ── Sticker badges ── */
+.sticker {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 14px;
+  border-radius:99px;
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.06em;
+  box-shadow: 0 2px 8px rgba(180,130,90,0.15);
+}
+.sticker-pink   { background:#fce4dc; color:#c4705a; }
+.sticker-yellow { background:#fdf0c8; color:#b09030; }
+.sticker-mint   { background:#d8f0e0; color:#507060; }
+.sticker-lav    { background:#ede8f8; color:#806090; }
+.sticker-sky    { background:#ddeef8; color:#507090; }
+
+/* ── Cover page ── */
+.cover-wrap {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  text-align:center;
+}
+.cover-illustration {
+  font-size:80px;
+  line-height:1;
+  margin-bottom:16px;
+  filter:drop-shadow(0 4px 10px rgba(180,130,90,0.2));
+  animation: wobble 3s ease-in-out infinite;
+}
+@keyframes wobble {
+  0%,100%{transform:rotate(-4deg) scale(1);}
+  50%{transform:rotate(4deg) scale(1.05);}
+}
+.cover-label {
+  font-size:11px;
+  letter-spacing:0.3em;
+  color:var(--caramel);
+  margin-bottom:10px;
+  font-weight:500;
+}
+.cover-title {
+  font-family:'Noto Serif TC',serif;
+  font-size:38px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.3;
+  letter-spacing:0.06em;
+  margin-bottom:8px;
+}
+.cover-subtitle {
+  font-size:14px;
+  color:var(--ink3);
+  letter-spacing:0.12em;
+  margin-bottom:24px;
+}
+.cover-deco-row {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  font-size:20px;
+  margin-bottom:20px;
+  animation:bounceRow 2s ease-in-out infinite;
+}
+@keyframes bounceRow{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
+}
+.cover-author {
+  font-size:12px;
+  color:var(--caramel);
+  letter-spacing:0.18em;
+}
+.cover-wavy-line {
+  width:140px;
+  height:3px;
+  border-radius:99px;
+  background:linear-gradient(to right, var(--blush), var(--peach), var(--latte));
+  margin:14px auto;
+}
+
+/* ── Chapter opener ── */
+.ch-opener {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:12px;
+}
+.ch-icon {
+  font-size:64px;
+  animation: pulse2 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 3px 8px rgba(180,130,90,0.2));
+}
+@keyframes pulse2{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.ch-num {
+  font-size:11px;
+  letter-spacing:0.3em;
+  color:var(--caramel);
+  font-weight:500;
+}
+.ch-title {
+  font-family:'Noto Serif TC',serif;
+  font-size:30px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.4;
+  letter-spacing:0.06em;
+}
+.ch-subtitle {
+  font-size:13px;
+  color:var(--ink3);
+  letter-spacing:0.1em;
+}
+.ch-divider {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14px;
+  color:var(--caramel);
+}
+.ch-divider::before,.ch-divider::after {
+  content:'';
+  width:50px; height:1.5px;
+  background:linear-gradient(to right, transparent, var(--caramel));
+  border-radius:99px;
+}
+.ch-divider::after { transform:scaleX(-1); }
+
+/* ── Diary card (content page) ── */
+.diary-card {
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid rgba(220,180,140,0.3);
+  border-radius:18px;
+  padding:20px 24px;
+  backdrop-filter:blur(4px);
+  box-shadow: 0 2px 12px rgba(180,130,90,0.1);
+  flex:1;
+  position:relative;
+  overflow:hidden;
+}
+.diary-card::after {
+  content:'';
+  position:absolute;
+  top:0; left:24px; right:24px;
+  height:1px;
+  background:linear-gradient(to right, transparent, rgba(200,160,120,0.4), transparent);
+}
+
+/* ── Text styles ── */
+.page-tag {
+  font-size:11px;
+  letter-spacing:0.25em;
+  color:var(--caramel);
+  font-weight:500;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.page-tag::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background:linear-gradient(to right, var(--latte), transparent);
+  opacity:0.5;
+}
+
+.diary-heading {
+  font-family:'Noto Serif TC',serif;
+  font-size:24px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.4;
+  margin-bottom:6px;
+  letter-spacing:0.04em;
+}
+.diary-sub {
+  font-size:13px;
+  color:var(--ink3);
+  margin-bottom:16px;
+  letter-spacing:0.06em;
+  padding-bottom:14px;
+  border-bottom:1.5px dashed rgba(200,168,130,0.35);
+}
+
+.diary-body {
+  font-size:15px;
+  color:var(--ink2);
+  line-height:2;
+  letter-spacing:0.04em;
+}
+.diary-body p { margin-bottom:12px; }
+
+/* Quote bubble */
+.bubble {
+  background:rgba(247,217,208,0.4);
+  border:1.5px solid rgba(220,160,130,0.3);
+  border-radius:16px 16px 16px 4px;
+  padding:12px 16px;
+  margin:12px 0;
+  font-size:14px;
+  font-style:italic;
+  color:var(--ink2);
+  line-height:1.9;
+  position:relative;
+}
+.bubble::before {
+  content:'✦';
+  position:absolute;
+  top:-10px; left:12px;
+  font-size:14px;
+  color:var(--rose);
+  background:var(--milk);
+  padding:0 4px;
+}
+
+/* Highlight line */
+.hl {
+  background:linear-gradient(to right, rgba(253,224,200,0.7), transparent);
+  border-left:3px solid var(--peach);
+  border-radius:0 8px 8px 0;
+  padding:8px 12px;
+  margin:10px 0;
+  font-size:14px;
+  color:var(--ink2);
+  line-height:1.9;
+}
+
+/* ── TOC page ── */
+.toc-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:6px;
+}
+.toc-card {
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid rgba(220,180,140,0.25);
+  border-radius:14px;
+  padding:13px 16px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  box-shadow:0 2px 8px rgba(180,130,90,0.08);
+  transition:transform 0.2s;
+  cursor:default;
+}
+.toc-card:hover { transform:translateY(-2px); }
+.toc-icon { font-size:22px; flex-shrink:0; margin-top:1px; }
+.toc-text {}
+.toc-ch-num { font-size:10px; color:var(--caramel); letter-spacing:0.2em; font-weight:500; }
+.toc-ch-name { font-size:14px; color:var(--ink); font-weight:500; line-height:1.4; margin-top:2px; }
+
+/* ── Cute deco elements (absolute positioned per page) ── */
+.deco { position:absolute; z-index:4; pointer-events:none; line-height:1; }
+
+/* ── Back cover ── */
+.back-wrap {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:14px;
+}
+.back-circle {
+  width:110px; height:110px;
+  border-radius:50%;
+  background:linear-gradient(135deg, var(--blush), var(--latte));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:52px;
+  box-shadow:0 4px 20px rgba(180,130,90,0.2);
+  animation:wobble 3s ease-in-out infinite;
+}
+.back-msg {
+  font-family:'Noto Serif TC',serif;
+  font-size:18px;
+  font-weight:400;
+  color:var(--ink2);
+  line-height:1.9;
+  letter-spacing:0.05em;
+}
+.back-dots {
+  display:flex; gap:6px;
+}
+.back-dot {
+  width:7px; height:7px; border-radius:50%;
+}
+
+/* ── Controls ── */
+.controls {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.ctrl-btn {
+  width:44px; height:44px;
+  border-radius:50%;
+  border:2px solid rgba(200,168,130,0.4);
+  background:rgba(255,253,248,0.9);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  transition:all 0.2s;
+  box-shadow:0 2px 8px rgba(180,130,90,0.15);
+  color:var(--caramel);
+}
+.ctrl-btn:hover:not(:disabled) {
+  background:#fff;
+  border-color:var(--caramel);
+  transform:scale(1.08);
+  box-shadow:0 4px 14px rgba(180,130,90,0.25);
+}
+.ctrl-btn:disabled { opacity:0.3; cursor:default; transform:none; }
+.ctrl-btn svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.page-dots {
+  display:flex; gap:7px; align-items:center;
+}
+.dot {
+  width:8px; height:8px; border-radius:50%;
+  background:rgba(200,168,130,0.3);
+  transition:all 0.3s;
+  cursor:pointer;
+}
+.dot.on {
+  width:22px;
+  border-radius:4px;
+  background:linear-gradient(to right, var(--rose), var(--peach));
+}
+
+.page-counter {
+  font-size:12px;
+  color:var(--caramel);
+  letter-spacing:0.1em;
+  min-width:60px;
+  text-align:center;
+}
+
+/* progress bar */
+.prog-bar {
+  width:100%;
+  max-width:700px;
+  height:3px;
+  background:rgba(200,168,130,0.2);
+  border-radius:99px;
+  overflow:hidden;
+}
+.prog-fill {
+  height:100%;
+  border-radius:99px;
+  background:linear-gradient(to right, var(--rose), var(--peach), var(--latte));
+  transition:width 0.5s ease;
+}
+
+.hint {
+  font-size:11px;
+  color:var(--caramel);
+  letter-spacing:0.06em;
+  opacity:0.7;
+}
+</style>
+</head>
+<body>
+
+<!-- bg deco -->
+<div class="bg-deco">☁️</div>
+<div class="bg-deco">🌸</div>
+<div class="bg-deco">⭐</div>
+<div class="bg-deco">🍀</div>
+<div class="bg-deco">💛</div>
+<div class="bg-deco">🌷</div>
+
+<div class="viewer">
+
+  <div class="book-header">
+    <span class="header-deco">✿</span>
+    <span class="book-header-title">我的小小日記本</span>
+    <span class="header-deco">✿</span>
+  </div>
+
+  <!-- ══ PAGE STAGE ══ -->
+  <div class="page-stage" id="stage">
+
+    <!-- PAGE 0: COVER -->
+    <div class="page page-cream active" data-page="0">
+      <div class="tape tape-pink" style="top:-4px;left:60px;"></div>
+      <div class="tape tape-yellow" style="top:-4px;right:80px;transform:rotate(5deg);"></div>
+      <div class="deco" style="top:18px;right:24px;font-size:22px;">🌸</div>
+      <div class="deco" style="bottom:28px;left:20px;font-size:18px;">⭐</div>
+      <div class="deco" style="bottom:48px;right:28px;font-size:16px;">☁️</div>
+      <div class="cover-wrap">
+        <div class="cover-illustration">🍵</div>
+        <div class="cover-label">✦ MY LITTLE JOURNAL ✦</div>
+        <div class="cover-title">我的每日<br>小日記</div>
+        <div class="cover-subtitle">Daily Life Notes</div>
+        <div class="cover-wavy-line"></div>
+        <div class="cover-deco-row">🌸 ☁️ ⭐ 🌼 💛</div>
+        <div class="cover-author">✍️ 小 熊 著 · 2026</div>
+      </div>
+    </div>
+
+    <!-- PAGE 1: TOC -->
+    <div class="page page-blush" data-page="1">
+      <div class="tape tape-blue" style="top:-4px;left:50%;transform:translateX(-50%) rotate(-2deg);"></div>
+      <div class="deco" style="top:20px;right:22px;font-size:20px;">🌷</div>
+      <div class="deco" style="bottom:24px;left:22px;font-size:16px;">💕</div>
+      <div class="page-tag">✿ 目錄 · CONTENTS ✿</div>
+      <div class="diary-heading" style="font-size:26px;margin-bottom:14px;">📖 日記的內容</div>
+      <div class="toc-grid">
+        <div class="toc-card">
+          <div class="toc-icon">🌅</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 01</div>
+            <div class="toc-ch-name">早晨的小習慣</div>
+          </div>
+        </div>
+        <div class="toc-card">
+          <div class="toc-icon">☕</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 02</div>
+            <div class="toc-ch-name">咖啡與下午茶</div>
+          </div>
+        </div>
+        <div class="toc-card">
+          <div class="toc-icon">🌸</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 03</div>
+            <div class="toc-ch-name">散步與小風景</div>
+          </div>
+        </div>
+        <div class="toc-card">
+          <div class="toc-icon">🌙</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 04</div>
+            <div class="toc-ch-name">睡前的溫柔</div>
+          </div>
+        </div>
+        <div class="toc-card">
+          <div class="toc-icon">💌</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 05</div>
+            <div class="toc-ch-name">給自己的話</div>
+          </div>
+        </div>
+        <div class="toc-card">
+          <div class="toc-icon">🌟</div>
+          <div class="toc-text">
+            <div class="toc-ch-num">Chapter 06</div>
+            <div class="toc-ch-name">今天也很棒</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: Ch1 Opener -->
+    <div class="page page-peach" data-page="2">
+      <div class="tape tape-pink" style="top:-4px;right:60px;transform:rotate(4deg);"></div>
+      <div class="deco" style="top:20px;left:22px;font-size:18px;">🌼</div>
+      <div class="deco" style="bottom:30px;right:24px;font-size:20px;">✨</div>
+      <div class="ch-opener">
+        <div class="sticker sticker-pink">Chapter 01</div>
+        <div class="ch-icon">🌅</div>
+        <div class="ch-num">☀ MORNING ROUTINE ☀</div>
+        <div class="ch-title">早晨的<br>小習慣</div>
+        <div class="ch-subtitle">Morning Little Habits</div>
+        <div class="ch-divider">🌸</div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: Ch1 Content -->
+    <div class="page page-cream" data-page="3">
+      <div class="tape tape-yellow" style="top:-4px;left:44px;"></div>
+      <div class="deco" style="top:18px;right:20px;font-size:16px;">☁️</div>
+      <div class="deco" style="bottom:26px;right:22px;font-size:16px;">🌸</div>
+      <div class="page-tag">🌅 Chapter 01 · 早晨</div>
+      <div class="diary-card">
+        <div class="diary-heading">早起的第一件事</div>
+        <div class="diary-sub">每個清晨，都是新的開始 ✨</div>
+        <div class="diary-body">
+          <p>今天早上七點，窗外的光線輕輕灑進來，像棉花糖一樣柔軟。我決定在起床後先喝一杯溫開水，然後靜靜坐在窗邊發呆五分鐘。</p>
+          <div class="bubble">不急著拿手機，不急著看訊息。只是安靜地感受今天的空氣味道。🍃</div>
+          <p>這個小習慣讓我覺得一天的開始是屬於自己的。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: Ch2 Opener -->
+    <div class="page page-lav" data-page="4">
+      <div class="tape tape-mint" style="top:-4px;left:55px;transform:rotate(-3deg);"></div>
+      <div class="deco" style="top:22px;right:22px;font-size:18px;">💛</div>
+      <div class="deco" style="bottom:28px;left:20px;font-size:20px;">☁️</div>
+      <div class="ch-opener">
+        <div class="sticker sticker-yellow">Chapter 02</div>
+        <div class="ch-icon">☕</div>
+        <div class="ch-num">☕ COFFEE & TEA TIME ☕</div>
+        <div class="ch-title">咖啡與<br>下午茶</div>
+        <div class="ch-subtitle">Little Afternoon Moments</div>
+        <div class="ch-divider">☁️</div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: Ch2 Content -->
+    <div class="page page-sky" data-page="5">
+      <div class="tape tape-pink" style="top:-4px;right:55px;transform:rotate(5deg);"></div>
+      <div class="deco" style="top:18px;left:22px;font-size:16px;">⭐</div>
+      <div class="deco" style="bottom:26px;right:20px;font-size:18px;">🌼</div>
+      <div class="page-tag">☕ Chapter 02 · 下午茶</div>
+      <div class="diary-card">
+        <div class="diary-heading">三點半的拿鐵</div>
+        <div class="diary-sub">一杯咖啡，一段喘息的時光 ☕</div>
+        <div class="diary-body">
+          <p>下午三點半，工作告一段落，我泡了一杯加了燕麥奶的拿鐵。坐在小角落，旁邊放著最近在讀的書。</p>
+          <div class="hl">☁️ 不是所有的休息都需要很長時間，五分鐘的安靜，也是一種充電。</div>
+          <p>喝完咖啡，感覺整個人都暖起來了。今天下午也可以繼續加油 🌟</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 6: Ch3 Opener -->
+    <div class="page page-sage" data-page="6">
+      <div class="tape tape-yellow" style="top:-4px;right:70px;transform:rotate(-4deg);"></div>
+      <div class="deco" style="top:20px;left:22px;font-size:20px;">🌷</div>
+      <div class="deco" style="bottom:30px;right:22px;font-size:16px;">💚</div>
+      <div class="ch-opener">
+        <div class="sticker sticker-mint">Chapter 03</div>
+        <div class="ch-icon">🌸</div>
+        <div class="ch-num">🌿 WALK & SCENERY 🌿</div>
+        <div class="ch-title">散步與<br>小風景</div>
+        <div class="ch-subtitle">Little Walks in Life</div>
+        <div class="ch-divider">🌿</div>
+      </div>
+    </div>
+
+    <!-- PAGE 7: Ch3 Content -->
+    <div class="page page-cream" data-page="7">
+      <div class="tape tape-blue" style="top:-4px;left:48px;transform:rotate(-2deg);"></div>
+      <div class="deco" style="top:18px;right:22px;font-size:18px;">🍃</div>
+      <div class="deco" style="bottom:26px;left:20px;font-size:16px;">🌸</div>
+      <div class="page-tag">🌸 Chapter 03 · 散步</div>
+      <div class="diary-card">
+        <div class="diary-heading">傍晚的金色小路</div>
+        <div class="diary-sub">帶著耳機，走進今天的夕陽裡 🌇</div>
+        <div class="diary-body">
+          <p>今天傍晚五點多，我決定出門走走。沿著巷子裡的矮牆走，發現了一棵不知道名字的小花，淡粉色的，很可愛。</p>
+          <div class="bubble">有時候把手機放進口袋，只是走路，就會發現很多平常忽略掉的美好。🌼</div>
+          <p>回家的時候心情莫名變好，可能這就是散步的魔法吧 ✨</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 8: Ch4 Opener -->
+    <div class="page page-blush" data-page="8">
+      <div class="tape tape-mint" style="top:-4px;left:60px;transform:rotate(3deg);"></div>
+      <div class="deco" style="top:20px;right:20px;font-size:20px;">⭐</div>
+      <div class="deco" style="bottom:28px;left:22px;font-size:18px;">💤</div>
+      <div class="ch-opener">
+        <div class="sticker sticker-lav">Chapter 04</div>
+        <div class="ch-icon">🌙</div>
+        <div class="ch-num">🌙 NIGHT RITUAL 🌙</div>
+        <div class="ch-title">睡前的<br>溫柔</div>
+        <div class="ch-subtitle">Gentle Nighttime Routine</div>
+        <div class="ch-divider">🌙</div>
+      </div>
+    </div>
+
+    <!-- PAGE 9: Ch4 Content -->
+    <div class="page page-lav" data-page="9">
+      <div class="tape tape-pink" style="top:-4px;right:52px;transform:rotate(-5deg);"></div>
+      <div class="deco" style="top:18px;left:22px;font-size:16px;">💜</div>
+      <div class="deco" style="bottom:26px;right:22px;font-size:18px;">🌟</div>
+      <div class="page-tag">🌙 Chapter 04 · 夜晚</div>
+      <div class="diary-card">
+        <div class="diary-heading">十點半的儀式感</div>
+        <div class="diary-sub">好好結束今天，才能迎接明天 🌸</div>
+        <div class="diary-body">
+          <p>睡前我喜歡用溫熱的毛巾敷臉，然後塗上睡眠面膜，把房間的燈調暗，播一點輕音樂。</p>
+          <div class="hl">🕯 不需要每天都很充實，好好睡一覺，也是對自己的溫柔。</div>
+          <p>今天做了哪些讓自己開心的小事呢？記下來，留給未來的自己看 💌</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 10: Ch5 -->
+    <div class="page page-peach" data-page="10">
+      <div class="tape tape-blue" style="top:-4px;left:52px;transform:rotate(2deg);"></div>
+      <div class="deco" style="top:18px;right:20px;font-size:18px;">💌</div>
+      <div class="deco" style="bottom:26px;left:22px;font-size:16px;">🌼</div>
+      <div class="page-tag">💌 Chapter 05 · 給自己</div>
+      <div class="diary-card">
+        <div class="diary-heading">給此刻的你</div>
+        <div class="diary-sub">一封寫給自己的小信 💛</div>
+        <div class="diary-body">
+          <div class="bubble">親愛的你，今天辛苦了。不管今天發生了什麼，你已經做得很好。🌸</div>
+          <p>記得喝水，記得吃飯，記得偶爾看看窗外的天空。生活不必完美，只要你還在認真感受它，那就已經很美好了。</p>
+          <div class="hl">⭐ 你值得被溫柔對待，包括被自己溫柔對待。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 11: BACK COVER -->
+    <div class="page page-cream" data-page="11">
+      <div class="tape tape-pink" style="top:-4px;left:50%;transform:translateX(-50%) rotate(-1deg);"></div>
+      <div class="deco" style="top:20px;left:24px;font-size:18px;">🌸</div>
+      <div class="deco" style="top:20px;right:24px;font-size:18px;">⭐</div>
+      <div class="deco" style="bottom:28px;left:24px;font-size:16px;">☁️</div>
+      <div class="deco" style="bottom:28px;right:24px;font-size:16px;">💛</div>
+      <div class="back-wrap">
+        <div class="back-circle">📖</div>
+        <div class="sticker sticker-pink">The End ✦</div>
+        <div class="back-msg">
+          謝謝你翻到這裡 🌸<br>
+          希望每一頁都能<br>
+          讓你的心暖一點點。<br>
+          <span style="font-size:14px;color:var(--ink3);">日記本 · 2026 ✿</span>
+        </div>
+        <div class="back-dots">
+          <div class="back-dot" style="background:var(--blush);"></div>
+          <div class="back-dot" style="background:var(--peach);"></div>
+          <div class="back-dot" style="background:var(--latte);"></div>
+          <div class="back-dot" style="background:var(--lavender);"></div>
+          <div class="back-dot" style="background:var(--sage);"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.page-stage -->
+
+  <!-- ── Controls ── -->
+  <div class="controls">
+    <button class="ctrl-btn" id="btn-prev" disabled aria-label="上一頁">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="page-dots" id="dots"></div>
+    <span class="page-counter" id="counter">1 / 12</span>
+    <button class="ctrl-btn" id="btn-next" aria-label="下一頁">
+      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
+  <div class="prog-bar"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  <p class="hint">點擊左右按鈕翻頁，或使用鍵盤 ← → 🌸</p>
+
+</div><!-- /.viewer -->
+
+<script>
+(function(){
+  const pages   = Array.from(document.querySelectorAll('.page'));
+  const total   = pages.length;
+  const dotsEl  = document.getElementById('dots');
+  let   current = 0;
+  let   busy    = false;
+  const DUR     = 600;
+
+  /* Build dots */
+  pages.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' on':'');
+    d.addEventListener('click', () => goTo(i, i > current ? 'right' : 'left'));
+    dotsEl.appendChild(d);
+  });
+
+  function updateUI() {
+    document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('on', i===current));
+    document.getElementById('counter').textContent = (current+1) + ' / ' + total;
+    document.getElementById('prog').style.width = Math.round(current/(total-1)*100) + '%';
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === total-1;
+  }
+
+  function goTo(next, dir) {
+    if (busy || next === current || next < 0 || next >= total) return;
+    busy = true;
+
+    const outPage = pages[current];
+    const inPage  = pages[next];
+
+    /* Position incoming page off-screen */
+    inPage.classList.remove('active');
+    inPage.style.transition = 'none';
+    inPage.style.transform  = dir === 'right' ? 'translateX(100%)' : 'translateX(-100%)';
+    inPage.style.opacity    = '0';
+    inPage.style.zIndex     = '3';
+    outPage.style.zIndex    = '2';
+
+    /* Force reflow */
+    void inPage.offsetWidth;
+
+    /* Slide in new page */
+    inPage.style.transition = '';
+    inPage.style.transform  = 'translateX(0)';
+    inPage.style.opacity    = '1';
+
+    /* Slide out old page */
+    outPage.style.transition = 'transform ' + DUR + 'ms cubic-bezier(0.4,0,0.2,1), opacity ' + DUR + 'ms cubic-bezier(0.4,0,0.2,1)';
+    outPage.style.transform  = dir === 'right' ? 'translateX(-100%)' : 'translateX(100%)';
+    outPage.style.opacity    = '0';
+
+    current = next;
+    updateUI();
+
+    setTimeout(function(){
+      /* Clean up outgoing */
+      outPage.classList.remove('active');
+      outPage.style.transition = 'none';
+      outPage.style.transform  = '';
+      outPage.style.opacity    = '';
+      outPage.style.zIndex     = '';
+
+      /* Settle incoming */
+      inPage.classList.add('active');
+      inPage.style.transition  = '';
+      inPage.style.transform   = '';
+      inPage.style.opacity     = '';
+      inPage.style.zIndex      = '';
+
+      busy = false;
+    }, DUR + 30);
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => goTo(current+1, 'right'));
+  document.getElementById('btn-prev').addEventListener('click', () => goTo(current-1, 'left'));
+
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight'||e.key==='PageDown') goTo(current+1,'right');
+    if (e.key==='ArrowLeft' ||e.key==='PageUp')   goTo(current-1,'left');
+  });
+
+  /* Touch/swipe */
+  let tx = 0;
+  document.getElementById('stage').addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+  document.getElementById('stage').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) dx < 0 ? goTo(current+1,'right') : goTo(current-1,'left');
+  }, {passive:true});
+
+  updateUI();
+})();
+</script>
+</body>
+</html>
